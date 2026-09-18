@@ -1,490 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dog Cookie Race</title>
-
-<style>
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #dff6ff, #fff4d6);
-  text-align: center;
-}
-
-h1 { margin-bottom: 6px; }
-
-#status {
-  margin-bottom: 12px;
-  color: #555;
-  font-size: 18px;
-}
-
-#maze {
-  display: grid;
-  grid-template-columns: repeat(11, 1fr);
-  gap: 2px;
-  width: min(94vw, 590px);
-  margin: auto;
-  padding: 6px;
-  background: #cbd5e1;
-  border-radius: 16px;
-}
-
-.cell {
-  aspect-ratio: 1;
-  position: relative;
-  background: #fffdf7;
-  border-radius: 3px;
-}
-
-.wall { background: #475569; }
-
-.dog {
-  position: absolute;
-  inset: 4%;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  font-size: clamp(18px, 5vw, 32px);
-  z-index: 3;
-  cursor: pointer;
-  user-select: none;
-  box-shadow: 0 3px 6px rgba(0,0,0,.3);
-  animation: run .16s infinite alternate;
-}
-
-.cookie {
-  position: absolute;
-  inset: 5%;
-  display: grid;
-  place-items: center;
-  font-size: clamp(20px, 5vw, 34px);
-  animation: cookieBob .45s infinite alternate;
-}
-
-@keyframes run {
-  from { transform: scale(1); }
-  to { transform: scale(1.12) rotate(5deg); }
-}
-
-@keyframes cookieBob {
-  from { transform: translateY(0); }
-  to { transform: translateY(-4px) rotate(7deg); }
-}
-
-button {
-  border: none;
-  padding: 12px 20px;
-  margin: 12px 0;
-  border-radius: 12px;
-  background: #111827;
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-button:hover { background: #374151; }
-
-#bark {
-  margin-top: 12px;
-  font-size: 20px;
-  font-weight: bold;
-  min-height: 28px;
-}
-
-#result {
-  width: min(94vw, 590px);
-  margin: 12px auto;
-  padding: 16px;
-  border-radius: 14px;
-  background: #fff3c4;
-  border: 2px solid #f59e0b;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.legend {
-  margin: 12px auto;
-  max-width: 590px;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-weight: bold;
-}
-
-.legend span {
-  padding: 6px 10px;
-  border-radius: 10px;
-  color: white;
-}
-
-.bowie { background: #ef4444; }
-.lolly { background: #ec4899; }
-.morgan { background: #3b82f6; }
-.millie { background: #8b5cf6; }
-</style>
-</head>
-
-<body>
-
-<h1>🐶 Dog Cookie Race 🍪</h1>
-
-<div id="status">
-  Touch any dog to START the race!
-</div>
-
-<button id="newRace">🏁 New Race</button>
-
-<div class="legend">
-  <span class="bowie">Bowie</span>
-  <span class="lolly">Lolly</span>
-  <span class="morgan">Morgan</span>
-  <span class="millie">Millie</span>
-</div>
-
-<div id="maze"></div>
-
-<div id="result" hidden></div>
-
-<div id="bark">
-  🐾 TOUCH A DOG!
-</div>
-
-<script>
-
-const mazeElement = document.getElementById("maze");
-const statusElement = document.getElementById("status");
-const barkElement = document.getElementById("bark");
-const resultElement = document.getElementById("result");
-const newRaceButton = document.getElementById("newRace");
-
-const WIDTH = 11;
-const HEIGHT = 11;
-
-const dogNames = [
-  "Bowie",
-  "Lolly",
-  "Morgan",
-  "Millie"
-];
-
-const dogColors = [
-  "#ef4444",
-  "#ec4899",
-  "#3b82f6",
-  "#8b5cf6"
-];
-
-let dogs;
-let cookie;
-let walls;
-
-let raceRunning = false;
-let raceTimer = null;
-let raceStartTime = 0;
-
-let audioContext = null;
-
-
-/* -----------------------------
-   POSITION HELPERS
------------------------------ */
-
-function positionKey(x, y) {
-  return `${x},${y}`;
-}
-
-function neighbors(x, y) {
-  return [
-    [x + 1, y],
-    [x - 1, y],
-    [x, y + 1],
-    [x, y - 1]
-  ].filter(([nx, ny]) =>
-    nx >= 0 &&
-    nx < WIDTH &&
-    ny >= 0 &&
-    ny < HEIGHT
-  );
-}
-
-
-/* -----------------------------
-   PATH CHECK
------------------------------ */
-
-function pathExists(start, goal, blocked) {
-
-  const queue = [start];
-
-  const visited = new Set([
-    positionKey(start[0], start[1])
-  ]);
-
-  while (queue.length > 0) {
-
-    const [x, y] = queue.shift();
-
-    if (x === goal[0] && y === goal[1]) {
-      return true;
-    }
-
-    for (const [nx, ny] of neighbors(x, y)) {
-
-      const key = positionKey(nx, ny);
-
-      if (
-        !blocked.has(key) &&
-        !visited.has(key)
-      ) {
-        visited.add(key);
-        queue.push([nx, ny]);
-      }
-    }
-  }
-
-  return false;
-}
-
-
-/* -----------------------------
-   CREATE NEW MAZE
-
-   The maze is created once
-   for each new race.
------------------------------ */
-
-function createMaze() {
-
-  const startingPositions = [
-    [0, 0],
-    [0, 10],
-    [10, 0],
-    [10, 10]
-  ];
-
-  const goal = [5, 5];
-
-  for (let attempt = 0; attempt < 200; attempt++) {
-
-    const newWalls = new Set();
-
-    for (let y = 0; y < HEIGHT; y++) {
-
-      for (let x = 0; x < WIDTH; x++) {
-
-        const isStart =
-          startingPositions.some(
-            ([sx, sy]) => sx === x && sy === y
-          );
-
-        const isCookie =
-          x === goal[0] && y === goal[1];
-
-        if (isStart || isCookie) {
-          continue;
-        }
-
-        if (Math.random() < 0.30) {
-          newWalls.add(positionKey(x, y));
-        }
-      }
-    }
-
-    /*
-      Keep some major corridors open.
-    */
-
-    for (let y = 0; y < HEIGHT; y++) {
-      newWalls.delete(positionKey(1, y));
-      newWalls.delete(positionKey(9, y));
-    }
-
-    for (let x = 0; x < WIDTH; x++) {
-      newWalls.delete(positionKey(x, 1));
-      newWalls.delete(positionKey(x, 9));
-    }
-
-    /*
-      Make sure every dog can reach
-      the Cookie.
-    */
-
-    const allDogsHavePaths =
-      startingPositions.every(start =>
-        pathExists(start, goal, newWalls)
-      );
-
-    if (allDogsHavePaths) {
-      return newWalls;
-    }
-  }
-
-  return new Set();
-}
-
-
-/* -----------------------------
-   DRAW MAZE
------------------------------ */
-
-function drawMaze() {
-
-  mazeElement.innerHTML = "";
-
-  for (let y = 0; y < HEIGHT; y++) {
-
-    for (let x = 0; x < WIDTH; x++) {
-
-      const cell = document.createElement("div");
-
-      cell.className = "cell";
-
-      const key = positionKey(x, y);
-
-      if (walls.has(key)) {
-        cell.classList.add("wall");
-      }
-
-      const dogIndex = dogs.findIndex(
-        dog => dog.x === x && dog.y === y
-      );
-
-      if (dogIndex !== -1) {
-
-        const dogElement =
-          document.createElement("div");
-
-        dogElement.className = "dog";
-
-        dogElement.style.background =
-          dogColors[dogIndex];
-
-        dogElement.textContent = "🐶";
-
-        dogElement.title =
-          `${dogNames[dogIndex]} — touch to start`;
-
-        dogElement.addEventListener(
-          "pointerdown",
-          startRace
-        );
-
-        cell.appendChild(dogElement);
-      }
-
-      if (
-        cookie.x === x &&
-        cookie.y === y
-      ) {
-
-        const cookieElement =
-          document.createElement("div");
-
-        cookieElement.className = "cookie";
-
-        cookieElement.textContent = "🍪";
-
-        cell.appendChild(cookieElement);
-      }
-
-      mazeElement.appendChild(cell);
-    }
-  }
-}
-
-
-/* -----------------------------
-   BARK SOUND
------------------------------ */
-
-function makeBarkSound() {
-
-  try {
-
-    if (!audioContext) {
-      audioContext =
-        new (
-          window.AudioContext ||
-          window.webkitAudioContext
-        )();
-    }
-
-    if (audioContext.state === "suspended") {
-      audioContext.resume();
-    }
-
-    const now = audioContext.currentTime;
-
-    [0, 0.20].forEach((delay, index) => {
-
-      const oscillator =
-        audioContext.createOscillator();
-
-      const gain =
-        audioContext.createGain();
-
-      const frequency =
-        index === 0 ? 330 : 270;
-
-      oscillator.type = "square";
-
-      oscillator.frequency.setValueAtTime(
-        frequency,
-        now + delay
-      );
-
-      oscillator.frequency.exponentialRampToValueAtTime(
-        frequency * 0.55,
-        now + delay + 0.12
-      );
-
-      gain.gain.setValueAtTime(
-        0.0001,
-        now + delay
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.12,
-        now + delay + 0.015
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        now + delay + 0.14
-      );
-
-      oscillator.connect(gain);
-      gain.connect(audioContext.destination);
-
-      oscillator.start(now + delay);
-      oscillator.stop(now + delay + 0.15);
-    });
-
-  } catch (error) {
-    // Game continues if sound is unavailable.
-  }
-}
-
-
-/* -----------------------------
-   STRAIGHT-LINE DOG MOVEMENT
-
-   Each dog keeps its current
-   direction until it reaches
-   a wall or edge.
-
-   Then it chooses another
-   available direction.
------------------------------ */
-
 function moveDog(dog) {
 
   const directions = [
@@ -495,286 +8,179 @@ function moveDog(dog) {
   ];
 
   /*
-    If the dog doesn't have a direction
-    yet, give it one.
+    Keep moving straight whenever possible.
   */
 
-  if (!dog.direction) {
+  if (dog.direction) {
 
-    const possible = directions.filter(
-      ([dx, dy]) => {
-        const nx = dog.x + dx;
-        const ny = dog.y + dy;
+    const [dx, dy] = dog.direction;
 
-        return (
-          nx >= 0 &&
-          nx < WIDTH &&
-          ny >= 0 &&
-          ny < HEIGHT &&
-          !walls.has(positionKey(nx, ny))
-        );
-      }
-    );
+    const nextX = dog.x + dx;
+    const nextY = dog.y + dy;
 
-    if (possible.length === 0) {
+    if (
+      nextX >= 0 &&
+      nextX < WIDTH &&
+      nextY >= 0 &&
+      nextY < HEIGHT &&
+      !walls.has(positionKey(nextX, nextY))
+    ) {
+      dog.x = nextX;
+      dog.y = nextY;
       return;
     }
-
-    dog.direction =
-      possible[
-        Math.floor(
-          Math.random() * possible.length
-        )
-      ];
-  }
-
-  const [dx, dy] = dog.direction;
-
-  const nextX = dog.x + dx;
-  const nextY = dog.y + dy;
-
-  /*
-    Keep going straight if the next
-    square is open.
-  */
-
-  if (
-    nextX >= 0 &&
-    nextX < WIDTH &&
-    nextY >= 0 &&
-    nextY < HEIGHT &&
-    !walls.has(positionKey(nextX, nextY))
-  ) {
-
-    dog.x = nextX;
-    dog.y = nextY;
-
-    return;
   }
 
   /*
-    We hit a wall or maze edge.
-    Choose a new direction.
+    We reached a wall, edge, or junction.
+    Look for available directions.
   */
 
-  const available = directions.filter(
-    ([newDx, newDy]) => {
+  const available = directions.filter(([dx, dy]) => {
 
-      const nx = dog.x + newDx;
-      const ny = dog.y + newDy;
+    const nx = dog.x + dx;
+    const ny = dog.y + dy;
 
-      return (
-        nx >= 0 &&
-        nx < WIDTH &&
-        ny >= 0 &&
-        ny < HEIGHT &&
-        !walls.has(positionKey(nx, ny))
-      );
-    }
-  );
+    return (
+      nx >= 0 &&
+      nx < WIDTH &&
+      ny >= 0 &&
+      ny < HEIGHT &&
+      !walls.has(positionKey(nx, ny))
+    );
+  });
 
   if (available.length === 0) {
     return;
   }
 
   /*
-    Prefer not to immediately turn
-    back the way we came.
+    Score each direction by how close it
+    ultimately gets the dog to the Cookie.
+
+    We use BFS distance rather than just
+    straight-line distance, so dogs don't
+    repeatedly choose a direction that looks
+    close but leads into a dead end.
   */
 
-  const nonReverse =
-    available.filter(
-      ([newDx, newDy]) =>
-        !(newDx === -dx && newDy === -dy)
+  function distanceToCookie(startX, startY) {
+
+    const queue = [
+      [startX, startY, 0]
+    ];
+
+    const visited = new Set([
+      positionKey(startX, startY)
+    ]);
+
+    while (queue.length > 0) {
+
+      const [x, y, distance] = queue.shift();
+
+      if (
+        x === cookie.x &&
+        y === cookie.y
+      ) {
+        return distance;
+      }
+
+      for (const [nx, ny] of neighbors(x, y)) {
+
+        const key = positionKey(nx, ny);
+
+        if (
+          !walls.has(key) &&
+          !visited.has(key)
+        ) {
+          visited.add(key);
+
+          queue.push([
+            nx,
+            ny,
+            distance + 1
+          ]);
+        }
+      }
+    }
+
+    return Infinity;
+  }
+
+  /*
+    Give every available direction a
+    distance score.
+  */
+
+  const scored = available.map(direction => {
+
+    const [dx, dy] = direction;
+
+    const nx = dog.x + dx;
+    const ny = dog.y + dy;
+
+    return {
+      direction,
+      distance: distanceToCookie(nx, ny)
+    };
+  });
+
+  /*
+    Find the shortest route to the Cookie.
+  */
+
+  const bestDistance = Math.min(
+    ...scored.map(item => item.distance)
+  );
+
+  let bestChoices = scored.filter(
+    item => item.distance === bestDistance
+  );
+
+  /*
+    Don't immediately reverse direction
+    unless it is the only sensible route.
+  */
+
+  if (dog.direction) {
+
+    const [oldDx, oldDy] = dog.direction;
+
+    const nonReverse = bestChoices.filter(
+      item => {
+        const [newDx, newDy] = item.direction;
+
+        return !(
+          newDx === -oldDx &&
+          newDy === -oldDy
+        );
+      }
     );
 
-  const choices =
-    nonReverse.length > 0
-      ? nonReverse
-      : available;
+    if (nonReverse.length > 0) {
+      bestChoices = nonReverse;
+    }
+  }
 
-  dog.direction =
-    choices[
+  /*
+    Pick randomly only between equally good
+    routes, so different dogs can still take
+    slightly different paths.
+  */
+
+  const chosen =
+    bestChoices[
       Math.floor(
-        Math.random() * choices.length
+        Math.random() * bestChoices.length
       )
     ];
 
+  dog.direction = chosen.direction;
+
   /*
-    Move in the new direction immediately.
+    Move immediately in the new direction.
   */
 
   dog.x += dog.direction[0];
   dog.y += dog.direction[1];
-}
-
-
-/* -----------------------------
-   START RACE
------------------------------ */
-
-function startRace() {
-
-  if (raceRunning) {
-    return;
-  }
-
-  raceRunning = true;
-
-  raceStartTime = performance.now();
-
-  statusElement.textContent =
-    "🏁 RACE! GO DOGS!";
-
-  barkElement.textContent =
-    "🐶 WOOF! WOOF! WOOF!";
-
-  resultElement.hidden = true;
-
-  makeBarkSound();
-
-  raceTimer = setInterval(
-    raceStep,
-    330
-  );
-}
-
-
-/* -----------------------------
-   RACE STEP
------------------------------ */
-
-function raceStep() {
-
-  dogs.forEach(moveDog);
-
-  makeBarkSound();
-
-  barkElement.textContent =
-    dogNames[
-      Math.floor(
-        Math.random() * dogNames.length
-      )
-    ] + ": WOOF! WOOF! 🐾";
-
-  drawMaze();
-
-  const winnerIndex =
-    dogs.findIndex(
-      dog =>
-        dog.x === cookie.x &&
-        dog.y === cookie.y
-    );
-
-  if (winnerIndex !== -1) {
-    finishRace(winnerIndex);
-  }
-}
-
-
-/* -----------------------------
-   FINISH RACE
------------------------------ */
-
-function finishRace(winnerIndex) {
-
-  const elapsedSeconds =
-    (
-      (performance.now() - raceStartTime)
-      / 1000
-    ).toFixed(2);
-
-  clearInterval(raceTimer);
-
-  raceRunning = false;
-
-  statusElement.textContent =
-    "🏆 Race finished!";
-
-  barkElement.textContent =
-    `🐶 ${dogNames[winnerIndex]}: WOOOOOOF! 🍪`;
-
-  resultElement.hidden = false;
-
-  resultElement.innerHTML = `
-    🏆 Winner:
-    <strong>${dogNames[winnerIndex]}</strong>
-    <br>
-    ⏱️ Time:
-    <strong>${elapsedSeconds} seconds</strong>
-  `;
-
-  makeBarkSound();
-
-  drawMaze();
-}
-
-
-/* -----------------------------
-   NEW RACE
------------------------------ */
-
-function newRace() {
-
-  clearInterval(raceTimer);
-
-  raceRunning = false;
-
-  dogs = [
-    {
-      x: 0,
-      y: 0,
-      direction: null
-    },
-    {
-      x: 0,
-      y: 10,
-      direction: null
-    },
-    {
-      x: 10,
-      y: 0,
-      direction: null
-    },
-    {
-      x: 10,
-      y: 10,
-      direction: null
-    }
-  ];
-
-  cookie = {
-    x: 5,
-    y: 5
-  };
-
-  /*
-    A completely new maze is made
-    for every race.
-  */
-
-  walls = createMaze();
-
-  resultElement.hidden = true;
-
-  statusElement.textContent =
-    "Touch any dog to START the race!";
-
-  barkElement.textContent =
-    "🏁 TOUCH A DOG!";
-
-  drawMaze();
-}
-
-
-newRaceButton.addEventListener(
-  "click",
-  newRace
-);
-
-newRace();
-
-</script>
-
-</body>
-</html>
+} 
