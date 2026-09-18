@@ -6,149 +6,129 @@
 <title>Dog Cookie Race</title>
 
 <style>
-  * {
-    box-sizing: border-box;
-  }
+* { box-sizing: border-box; }
 
-  body {
-    margin: 0;
-    padding: 20px;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #dff6ff, #fff4d6);
-    text-align: center;
-  }
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #dff6ff, #fff4d6);
+  text-align: center;
+}
 
-  h1 {
-    margin-bottom: 6px;
-  }
+h1 { margin-bottom: 6px; }
 
-  #status {
-    margin-bottom: 12px;
-    color: #555;
-    font-size: 18px;
-  }
+#status {
+  margin-bottom: 12px;
+  color: #555;
+  font-size: 18px;
+}
 
-  #maze {
-    display: grid;
-    grid-template-columns: repeat(11, 1fr);
-    gap: 2px;
-    width: min(94vw, 590px);
-    margin: auto;
-    padding: 6px;
-    background: #cbd5e1;
-    border-radius: 16px;
-  }
+#maze {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  gap: 2px;
+  width: min(94vw, 590px);
+  margin: auto;
+  padding: 6px;
+  background: #cbd5e1;
+  border-radius: 16px;
+}
 
-  .cell {
-    aspect-ratio: 1;
-    position: relative;
-    background: #fffdf7;
-    border-radius: 3px;
-  }
+.cell {
+  aspect-ratio: 1;
+  position: relative;
+  background: #fffdf7;
+  border-radius: 3px;
+}
 
-  .wall {
-    background: #475569;
-  }
+.wall { background: #475569; }
 
-  .dog {
-    position: absolute;
-    inset: 4%;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    font-size: clamp(18px, 5vw, 32px);
-    z-index: 3;
-    cursor: pointer;
-    user-select: none;
-    box-shadow: 0 3px 6px rgba(0,0,0,.3);
-    animation: run .16s infinite alternate;
-  }
+.dog {
+  position: absolute;
+  inset: 4%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: clamp(18px, 5vw, 32px);
+  z-index: 3;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 3px 6px rgba(0,0,0,.3);
+  animation: run .16s infinite alternate;
+}
 
-  .dog:hover {
-    transform: scale(1.08);
-  }
+.cookie {
+  position: absolute;
+  inset: 5%;
+  display: grid;
+  place-items: center;
+  font-size: clamp(20px, 5vw, 34px);
+  animation: cookieBob .45s infinite alternate;
+}
 
-  .cookie {
-    position: absolute;
-    inset: 5%;
-    display: grid;
-    place-items: center;
-    font-size: clamp(20px, 5vw, 34px);
-    animation: cookieBob .45s infinite alternate;
-  }
+@keyframes run {
+  from { transform: scale(1); }
+  to { transform: scale(1.12) rotate(5deg); }
+}
 
-  @keyframes run {
-    from {
-      transform: scale(1);
-    }
-    to {
-      transform: scale(1.12) rotate(5deg);
-    }
-  }
+@keyframes cookieBob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px) rotate(7deg); }
+}
 
-  @keyframes cookieBob {
-    from {
-      transform: translateY(0);
-    }
-    to {
-      transform: translateY(-4px) rotate(7deg);
-    }
-  }
+button {
+  border: none;
+  padding: 12px 20px;
+  margin: 12px 0;
+  border-radius: 12px;
+  background: #111827;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
 
-  button {
-    border: none;
-    padding: 12px 20px;
-    margin: 12px 0;
-    border-radius: 12px;
-    background: #111827;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-  }
+button:hover { background: #374151; }
 
-  button:hover {
-    background: #374151;
-  }
+#bark {
+  margin-top: 12px;
+  font-size: 20px;
+  font-weight: bold;
+  min-height: 28px;
+}
 
-  #bark {
-    margin-top: 12px;
-    font-size: 20px;
-    font-weight: bold;
-    min-height: 28px;
-  }
+#result {
+  width: min(94vw, 590px);
+  margin: 12px auto;
+  padding: 16px;
+  border-radius: 14px;
+  background: #fff3c4;
+  border: 2px solid #f59e0b;
+  font-size: 20px;
+  font-weight: bold;
+}
 
-  #result {
-    width: min(94vw, 590px);
-    margin: 12px auto;
-    padding: 16px;
-    border-radius: 14px;
-    background: #fff3c4;
-    border: 2px solid #f59e0b;
-    font-size: 20px;
-    font-weight: bold;
-  }
+.legend {
+  margin: 12px auto;
+  max-width: 590px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-weight: bold;
+}
 
-  .legend {
-    margin: 12px auto;
-    max-width: 590px;
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    font-weight: bold;
-  }
+.legend span {
+  padding: 6px 10px;
+  border-radius: 10px;
+  color: white;
+}
 
-  .legend span {
-    padding: 6px 10px;
-    border-radius: 10px;
-    color: white;
-  }
-
-  .bowie { background: #ef4444; }
-  .lolly { background: #ec4899; }
-  .morgan { background: #3b82f6; }
-  .millie { background: #8b5cf6; }
+.bowie { background: #ef4444; }
+.lolly { background: #ec4899; }
+.morgan { background: #3b82f6; }
+.millie { background: #8b5cf6; }
 </style>
 </head>
 
@@ -160,9 +140,7 @@
   Touch any dog to START the race!
 </div>
 
-<button id="newRace">
-  🏁 New Race
-</button>
+<button id="newRace">🏁 New Race</button>
 
 <div class="legend">
   <span class="bowie">Bowie</span>
@@ -180,9 +158,6 @@
 </div>
 
 <script>
-/* --------------------------------
-   DOG COOKIE RACE
---------------------------------- */
 
 const mazeElement = document.getElementById("maze");
 const statusElement = document.getElementById("status");
@@ -218,9 +193,9 @@ let raceStartTime = 0;
 let audioContext = null;
 
 
-/* --------------------------------
+/* -----------------------------
    POSITION HELPERS
---------------------------------- */
+----------------------------- */
 
 function positionKey(x, y) {
   return `${x},${y}`;
@@ -241,9 +216,9 @@ function neighbors(x, y) {
 }
 
 
-/* --------------------------------
-   CHECK THAT A PATH EXISTS
---------------------------------- */
+/* -----------------------------
+   PATH CHECK
+----------------------------- */
 
 function pathExists(start, goal, blocked) {
 
@@ -279,14 +254,12 @@ function pathExists(start, goal, blocked) {
 }
 
 
-/* --------------------------------
-   CREATE A NEW MAZE
+/* -----------------------------
+   CREATE NEW MAZE
 
-   The maze is generated only when
-   New Race is pressed.
-
-   It stays fixed during the race.
---------------------------------- */
+   The maze is created once
+   for each new race.
+----------------------------- */
 
 function createMaze() {
 
@@ -319,10 +292,6 @@ function createMaze() {
           continue;
         }
 
-        /*
-          Moderate number of walls so the maze
-          is interesting but not too difficult.
-        */
         if (Math.random() < 0.30) {
           newWalls.add(positionKey(x, y));
         }
@@ -330,8 +299,7 @@ function createMaze() {
     }
 
     /*
-      Keep four main corridors open.
-      This makes the maze easier to navigate.
+      Keep some major corridors open.
     */
 
     for (let y = 0; y < HEIGHT; y++) {
@@ -345,8 +313,8 @@ function createMaze() {
     }
 
     /*
-      Only accept the maze if EVERY dog
-      has a route to the Cookie.
+      Make sure every dog can reach
+      the Cookie.
     */
 
     const allDogsHavePaths =
@@ -359,18 +327,13 @@ function createMaze() {
     }
   }
 
-  /*
-    Safety fallback:
-    an empty maze always has a path.
-  */
-
   return new Set();
 }
 
 
-/* --------------------------------
+/* -----------------------------
    DRAW MAZE
---------------------------------- */
+----------------------------- */
 
 function drawMaze() {
 
@@ -389,10 +352,6 @@ function drawMaze() {
       if (walls.has(key)) {
         cell.classList.add("wall");
       }
-
-      /*
-        Draw dog
-      */
 
       const dogIndex = dogs.findIndex(
         dog => dog.x === x && dog.y === y
@@ -413,11 +372,6 @@ function drawMaze() {
         dogElement.title =
           `${dogNames[dogIndex]} — touch to start`;
 
-        dogElement.setAttribute(
-          "aria-label",
-          `${dogNames[dogIndex]} — touch to start`
-        );
-
         dogElement.addEventListener(
           "pointerdown",
           startRace
@@ -425,10 +379,6 @@ function drawMaze() {
 
         cell.appendChild(dogElement);
       }
-
-      /*
-        Draw Cookie
-      */
 
       if (
         cookie.x === x &&
@@ -451,16 +401,15 @@ function drawMaze() {
 }
 
 
-/* --------------------------------
-   REALISTIC-STYLE DOG BARK
---------------------------------- */
+/* -----------------------------
+   BARK SOUND
+----------------------------- */
 
 function makeBarkSound() {
 
   try {
 
     if (!audioContext) {
-
       audioContext =
         new (
           window.AudioContext ||
@@ -473,11 +422,6 @@ function makeBarkSound() {
     }
 
     const now = audioContext.currentTime;
-
-    /*
-      Two short bursts create a
-      "woof woof" effect.
-    */
 
     [0, 0.20].forEach((delay, index) => {
 
@@ -525,49 +469,149 @@ function makeBarkSound() {
     });
 
   } catch (error) {
-    /*
-      Audio may be unavailable in some browsers.
-      The game still works without sound.
-    */
+    // Game continues if sound is unavailable.
   }
 }
 
 
-/* --------------------------------
-   DOG MOVEMENT
---------------------------------- */
+/* -----------------------------
+   STRAIGHT-LINE DOG MOVEMENT
+
+   Each dog keeps its current
+   direction until it reaches
+   a wall or edge.
+
+   Then it chooses another
+   available direction.
+----------------------------- */
 
 function moveDog(dog) {
 
-  const possibleMoves =
-    neighbors(dog.x, dog.y)
-      .filter(([x, y]) =>
-        !walls.has(positionKey(x, y))
-      );
+  const directions = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1]
+  ];
 
-  if (possibleMoves.length === 0) {
+  /*
+    If the dog doesn't have a direction
+    yet, give it one.
+  */
+
+  if (!dog.direction) {
+
+    const possible = directions.filter(
+      ([dx, dy]) => {
+        const nx = dog.x + dx;
+        const ny = dog.y + dy;
+
+        return (
+          nx >= 0 &&
+          nx < WIDTH &&
+          ny >= 0 &&
+          ny < HEIGHT &&
+          !walls.has(positionKey(nx, ny))
+        );
+      }
+    );
+
+    if (possible.length === 0) {
+      return;
+    }
+
+    dog.direction =
+      possible[
+        Math.floor(
+          Math.random() * possible.length
+        )
+      ];
+  }
+
+  const [dx, dy] = dog.direction;
+
+  const nextX = dog.x + dx;
+  const nextY = dog.y + dy;
+
+  /*
+    Keep going straight if the next
+    square is open.
+  */
+
+  if (
+    nextX >= 0 &&
+    nextX < WIDTH &&
+    nextY >= 0 &&
+    nextY < HEIGHT &&
+    !walls.has(positionKey(nextX, nextY))
+  ) {
+
+    dog.x = nextX;
+    dog.y = nextY;
+
     return;
   }
 
   /*
-    Random movement keeps the race fun.
+    We hit a wall or maze edge.
+    Choose a new direction.
   */
 
-  const move =
-    possibleMoves[
+  const available = directions.filter(
+    ([newDx, newDy]) => {
+
+      const nx = dog.x + newDx;
+      const ny = dog.y + newDy;
+
+      return (
+        nx >= 0 &&
+        nx < WIDTH &&
+        ny >= 0 &&
+        ny < HEIGHT &&
+        !walls.has(positionKey(nx, ny))
+      );
+    }
+  );
+
+  if (available.length === 0) {
+    return;
+  }
+
+  /*
+    Prefer not to immediately turn
+    back the way we came.
+  */
+
+  const nonReverse =
+    available.filter(
+      ([newDx, newDy]) =>
+        !(newDx === -dx && newDy === -dy)
+    );
+
+  const choices =
+    nonReverse.length > 0
+      ? nonReverse
+      : available;
+
+  dog.direction =
+    choices[
       Math.floor(
-        Math.random() * possibleMoves.length
+        Math.random() * choices.length
       )
     ];
 
-  dog.x = move[0];
-  dog.y = move[1];
+  /*
+    Move in the new direction immediately.
+  */
+
+  dog.x += dog.direction[0];
+  dog.y += dog.direction[1];
 }
 
 
-/* --------------------------------
+/* -----------------------------
    START RACE
---------------------------------- */
+----------------------------- */
 
 function startRace() {
 
@@ -596,17 +640,11 @@ function startRace() {
 }
 
 
-/* --------------------------------
+/* -----------------------------
    RACE STEP
---------------------------------- */
+----------------------------- */
 
 function raceStep() {
-
-  /*
-    Move all dogs.
-    IMPORTANT:
-    The maze walls do NOT change here.
-  */
 
   dogs.forEach(moveDog);
 
@@ -621,10 +659,6 @@ function raceStep() {
 
   drawMaze();
 
-  /*
-    Check for winner.
-  */
-
   const winnerIndex =
     dogs.findIndex(
       dog =>
@@ -633,15 +667,14 @@ function raceStep() {
     );
 
   if (winnerIndex !== -1) {
-
     finishRace(winnerIndex);
   }
 }
 
 
-/* --------------------------------
+/* -----------------------------
    FINISH RACE
---------------------------------- */
+----------------------------- */
 
 function finishRace(winnerIndex) {
 
@@ -677,9 +710,9 @@ function finishRace(winnerIndex) {
 }
 
 
-/* --------------------------------
+/* -----------------------------
    NEW RACE
---------------------------------- */
+----------------------------- */
 
 function newRace() {
 
@@ -688,10 +721,26 @@ function newRace() {
   raceRunning = false;
 
   dogs = [
-    { x: 0, y: 0 },
-    { x: 0, y: 10 },
-    { x: 10, y: 0 },
-    { x: 10, y: 10 }
+    {
+      x: 0,
+      y: 0,
+      direction: null
+    },
+    {
+      x: 0,
+      y: 10,
+      direction: null
+    },
+    {
+      x: 10,
+      y: 0,
+      direction: null
+    },
+    {
+      x: 10,
+      y: 10,
+      direction: null
+    }
   ];
 
   cookie = {
@@ -700,7 +749,8 @@ function newRace() {
   };
 
   /*
-    NEW maze every time.
+    A completely new maze is made
+    for every race.
   */
 
   walls = createMaze();
@@ -717,19 +767,10 @@ function newRace() {
 }
 
 
-/* --------------------------------
-   BUTTON
---------------------------------- */
-
 newRaceButton.addEventListener(
   "click",
   newRace
 );
-
-
-/* --------------------------------
-   START FIRST GAME
---------------------------------- */
 
 newRace();
 
